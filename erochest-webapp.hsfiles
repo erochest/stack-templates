@@ -1,5 +1,44 @@
-{-# START_FILE cabal.config #-}
-library-profiling: True
+{-# START_FILE .gitignore #-}
+dist
+dist-*
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+.hpc
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+*.prof
+*.aux
+*.hp
+*.eventlog
+.stack-work/
+{-# START_FILE .travis.yml #-}
+sudo: false
+
+language: c
+
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+
+cache:
+  directories:
+    - $HOME/.stack
+
+before_install:
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - stack --version
+
+script:
+  - stack --no-terminal --install-ghc test --pedantic 
 {-# START_FILE LICENSE #-}
                                  Apache License
                            Version 2.0, January 2004
@@ -206,6 +245,7 @@ library-profiling: True
 
 # BUILD_FLAGS=--pedantic --library-profiling --executable-profiling
 BUILD_FLAGS=--pedantic
+PORT=8080
 
 RUN=stack exec -- {{name}}
 
@@ -215,7 +255,7 @@ stack.yaml:
 	stack init --prefer-nightly
 
 run: build
-	$(RUN) --help
+	$(RUN) --port $(PORT)
 
 docs:
 	stack haddock
@@ -274,6 +314,19 @@ rebuild: clean build
 
 .PHONY: init run docs configure install hlint clean distclean build test
 .PHONY: bench watch watch-test restart rebuild
+
+{-# START_FILE README.md #-}
+# {{name}}
+
+[![Build Status](https://travis-ci.org/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}.png)](https://travis-ci.org/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}})
+
+{{description}}{{^description}}TODO Description.{{/description}}
+
+{-# START_FILE Setup.hs #-}
+import Distribution.Simple
+main = defaultMain
+{-# START_FILE cabal.config #-}
+library-profiling: True
 {-# START_FILE {{name}}.cabal #-}
 name:                {{name}}
 version:             0.0.0.0
@@ -284,36 +337,53 @@ license-file:        LICENSE
 author:              {{author-name}}
 maintainer:          {{author-email}}
 -- copyright:           {{copyright}}
--- category:            
+-- category:
 build-type:          Simple
--- extra-source-files:  
+-- extra-source-files:
 cabal-version:       >=1.10
 
 library
   exposed-modules:     {{package}}.Actions.Default
                      , {{package}}.Types
-  -- other-modules:       
-  -- other-extensions:    
+  -- other-modules:
+  -- other-extensions:
   build-depends:       base >=4.8 && <4.9
+                     , digestive-functors
                      , errors
+                     -- , google-oauth2
                      , lens
+                     , lucid
+                     , persistent
+                     , persistent-postgresql
+                     , Spock
+                     , Spock-digestive
+                     -- , Spock-worker
                      , text
                      , text-format
+                     -- , users
+                     -- , users-persistent
+                     -- , validate-input
+                     , wai
+                     , wai-middleware-static
+                     , warp
   hs-source-dirs:      src
   default-language:    Haskell2010
 
 executable {{name}}
   main-is:             Main.hs
-  other-modules:       Actions
-                     , Opts
+  other-modules:       Opts
                      , Types
-  -- other-extensions:    
+                     , WebRoutes
+  -- other-extensions:
   build-depends:       base >=4.8 && <5
                      , {{name}}
                      , errors
-                     , text
                      , optparse-applicative
-                     , errors
+                     , Spock
+                     , text
+                     , wai
+                     , wai-middleware-static
+                     , warp
   hs-source-dirs:      app
   ghc-options:         -O2
                        -threaded
@@ -345,7 +415,7 @@ benchmark {{name}}-bench
                        -rtsopts
   hs-source-dirs:      bench
   main-is:             Bench.hs
-  -- other-modules:         
+  -- other-modules:
   build-depends:         base
                        , {{name}}
                        , criterion
@@ -354,92 +424,24 @@ benchmark {{name}}-bench
 source-repository head
   type:     git
   location: https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
-{-# START_FILE README.md #-}
-# {{name}}
-
-[![Build Status](https://travis-ci.org/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}.png)](https://travis-ci.org/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}})
-
-{{description}}{{^description}}TODO Description.{{/description}}
-{-# START_FILE .travis.yml #-}
-sudo: false
-
-language: c
-
-addons:
-  apt:
-    packages:
-      - libgmp-dev
-
-cache:
-  directories:
-    - $HOME/.stack
-
-before_install:
-  - mkdir -p ~/.local/bin
-  - export PATH=$HOME/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  - stack --version
-
-script:
-  - stack --no-terminal --install-ghc test --pedantic 
-
-{-# START_FILE .gitignore #-}
-dist
-dist-*
-cabal-dev
-*.o
-*.hi
-*.chi
-*.chs.h
-*.dyn_o
-*.dyn_hi
-.hpc
-.hsenv
-.cabal-sandbox/
-cabal.sandbox.config
-*.prof
-*.aux
-*.hp
-*.eventlog
-.stack-work/
-{-# START_FILE Setup.hs #-}
-import Distribution.Simple
-main = defaultMain
-{-# START_FILE app/Actions.hs #-}
-{-# LANGUAGE OverloadedLists   #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-
-
-module Actions where
-
-
-import           Control.Error
-
-import           {{package}}.Actions.Default
-
-import           Types
-
-
-action :: Actions -> Script ()
-
-action Default{..} = defaultAction defaultInput defaultOutput
-
 {-# START_FILE app/Main.hs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 
 module Main where
 
 
-import           Control.Error
+import           Web.Spock.Shared
 
-import           Actions
 import           Opts
+import           WebRoutes
 
 
 main :: IO ()
-main = runScript . action =<< parseOpts
+main = do
+    Serve{..} <- parseOpts
+    runSpock servePort webRoutes
 {-# START_FILE app/Opts.hs #-}
 {-# LANGUAGE LambdaCase #-}
 
@@ -452,9 +454,8 @@ module Opts
     ) where
 
 
--- import           Control.Monad       (mzero)
--- import qualified Data.List           as L
--- import qualified Data.Text           as T
+import           Network.Wai.Handler.Warp
+
 import           Options.Applicative
 
 -- import           {{package}}.Types
@@ -462,32 +463,21 @@ import           Options.Applicative
 import           Types
 
 
--- textOption :: Mod OptionFields T.Text -> Parser T.Text
--- textOption = option (T.pack <$> str)
+portOpt :: Parser Port
+portOpt = option auto (  short 'p' <> long "port" <> metavar "PORT_NO"
+                      <> help "This port to serve on.")
 
-outputOpt :: Parser FilePath
-outputOpt = strOption (  short 'o' <> long "output" <> metavar "OUTPUT_FILE"
-                      <> help "The file to write back to.")
+serverOpts :: Parser Actions
+serverOpts = Serve <$> portOpt
 
-inputOpt :: Parser FilePath
-inputOpt = strOption (  short 'i' <> long "input" <> metavar "INPUT_FILE"
-                     <> help "The input file to process.")
-
--- inputsOpt :: Parser [FilePath]
--- inputsOpt = many (strArgument (  metavar "INPUT_FILES ..."
-                              -- <> help "Input data files."))
-
-defaultOpts :: Parser Actions
-defaultOpts = Default <$> outputOpt <*> inputOpt
-
-opts' :: Parser Actions
-opts' = subparser
-      (  command "default" (info (helper <*> defaultOpts)
-                          (progDesc "Default action and options."))
-      )
+-- opts' :: Parser Actions
+-- opts' = subparser
+--       (  command "default" (info (helper <*> serverOpts)
+--                           (progDesc "Serve the webapp."))
+--       )
 
 opts :: ParserInfo Actions
-opts = info (helper <*> opts')
+opts = info (helper <*> serverOpts)
             (  fullDesc
             <> progDesc "{{description}}{{^description}}TODO description{{/description}}"
             <> header "{{name}} - {{synopsis}}")
@@ -498,14 +488,34 @@ parseOpts = execParser opts
 module Types where
 
 
+import           Network.Wai.Handler.Warp
+
 -- import           {{package}}.Types
 
 
 data Actions
-        = Default { defaultOutput :: !FilePath
-                  , defaultInput  :: !FilePath
-                  }
+        = Serve { servePort :: !Port
+                }
         deriving (Show, Eq)
+{-# START_FILE app/WebRoutes.hs #-}
+{-# LANGUAGE OverloadedLists   #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+
+module WebRoutes where
+
+
+import           Network.Wai
+import           Web.Spock.Safe
+
+-- import           Types
+
+import {{package}}.Actions.Default
+
+
+webRoutes :: IO Middleware
+webRoutes = spockT id $
+    get root $ defaultAction
 {-# START_FILE bench/Bench.hs #-}
 module Main where
 
@@ -546,13 +556,13 @@ spec = do
 module {{package}}.Actions.Default where
 
 
-import           Control.Error
+import           Web.Spock.Safe
 
 -- import           {{package}}.Types
 
 
-defaultAction :: FilePath -> FilePath -> Script ()
-defaultAction _input _output = undefined
+defaultAction :: ActionCtxT ctx IO ()
+defaultAction = text "Good-bye, cruel world!"
 {-# START_FILE src/{{package}}/Types.hs #-}
 -- {-# LANGUAGE DeriveDataTypeable         #-}
 -- {-# LANGUAGE DeriveFunctor              #-}
