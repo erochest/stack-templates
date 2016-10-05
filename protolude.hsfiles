@@ -16,21 +16,23 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
+  ghc-options:         -Wall
   exposed-modules:     Lib
+  other-modules:       Lib.Prelude
   build-depends:       base >= 4.7 && < 5
-                     , aeson
-                     , servant-server
-                     , wai
-                     , warp
+                     , protolude >= 0.1.6 && < 0.2
   default-language:    Haskell2010
+  default-extensions:  OverloadedStrings, NoImplicitPrelude
 
 executable {{name}}-exe
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , {{name}}
+                     , protolude >= 0.1.6 && < 0.2
   default-language:    Haskell2010
+  default-extensions:  OverloadedStrings, NoImplicitPrelude
 
 test-suite {{name}}-test
   type:                exitcode-stdio-1.0
@@ -38,8 +40,10 @@ test-suite {{name}}-test
   main-is:             Spec.hs
   build-depends:       base
                      , {{name}}
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+                     , protolude >= 0.1.6 && < 0.2
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
+  default-extensions:  OverloadedStrings, NoImplicitPrelude
 
 source-repository head
   type:     git
@@ -50,57 +54,54 @@ import Distribution.Simple
 main = defaultMain
 
 {-# START_FILE test/Spec.hs #-}
-main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+import Protolude
 
-{-# START_FILE src/Lib.hs #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeOperators   #-}
-module Lib
-    ( startApp
+main :: IO ()
+main = putStrLn ("Test suite not yet implemented" :: Text)
+
+{-# START_FILE src/Lib/Prelude.hs #-}
+{-
+Welcome to your custom Prelude
+Export here everything that should always be in your library scope
+For more info on what is exported by Protolude check:
+https://github.com/sdiehl/protolude/blob/master/Symbols.md
+-}
+module Lib.Prelude
+    ( module Exports
     ) where
 
-import Data.Aeson
-import Data.Aeson.TH
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Servant
+import Protolude as Exports
 
-data User = User
-  { userId        :: Int
-  , userFirstName :: String
-  , userLastName  :: String
-  } deriving (Eq, Show)
+{-# START_FILE src/Lib.hs #-}
+{-|
+Module      : Lib
+Description : Lib's main module
 
-$(deriveJSON defaultOptions ''User)
+This is a haddock comment describing your library
+For more information on how to write Haddock comments check the user guide:
+<https://www.haskell.org/haddock/doc/html/index.html>
+-}
+module Lib
+    ( someFunc
+    ) where
 
-type API = "users" :> Get '[JSON] [User]
+import Lib.Prelude
 
-startApp :: IO ()
-startApp = run 8080 app
-
-app :: Application
-app = serve api server
-
-api :: Proxy API
-api = Proxy
-
-server :: Server API
-server = return users
-
-users :: [User]
-users = [ User 1 "Isaac" "Newton"
-        , User 2 "Albert" "Einstein"
-        ]
+-- | Prints someFunc
+--
+-- >>> someFunc 10
+-- someFunc
+someFunc :: IO ()
+someFunc = putStrLn ("someFunc" :: Text)
 
 {-# START_FILE app/Main.hs #-}
 module Main where
 
+import Protolude
 import Lib
 
 main :: IO ()
-main = startApp
+main = someFunc
 
 {-# START_FILE LICENSE #-}
 Copyright {{author-name}}{{^author-name}}Author name here{{/author-name}} (c) {{year}}{{^year}}2016{{/year}}
@@ -133,3 +134,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+{-# START_FILE README.md #-}
+# {{name}}
+
+add description of {{name}} here
