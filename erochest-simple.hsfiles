@@ -212,13 +212,13 @@ RUN=stack exec -- {{name}}
 %.html: %.lhs
     pandoc --from markdown+lhs --to html5 --smart --standalone --output=$@ $<
 
+run: build
+	$(RUN) --help
+
 init: stack.yaml
 
 stack.yaml:
-	stack init --prefer-nightly
-
-run: build
-	$(RUN) --help
+	stack init
 
 docs:
 	stack haddock
@@ -286,7 +286,7 @@ license:             Apache-2.0
 license-file:        LICENSE
 author:              {{author-name}}
 maintainer:          {{author-email}}
--- copyright:           {{copyright}}
+copyright:           {{copyright}}
 -- category:
 build-type:          Simple
 -- extra-source-files:

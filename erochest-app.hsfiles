@@ -209,13 +209,13 @@ BUILD_FLAGS=--pedantic
 
 RUN=stack exec -- {{name}}
 
+run: build
+	$(RUN) --help
+
 init: stack.yaml
 
 stack.yaml:
-	stack init --prefer-nightly
-
-run: build
-	$(RUN) --help
+	stack init
 
 docs:
 	stack haddock
@@ -263,10 +263,10 @@ bench:
 	stack bench $(BUILD_FLAGS)
 
 watch:
-	ghcid "--command=stack ghci"
+	stack build --fast --file-watch --pedantic
 
 watch-test:
-	stack test --file-watch --pedantic # --test-arguments "-m TODO"
+	stack test --fast --file-watch --pedantic # --test-arguments "-m TODO"
 
 restart: distclean init build
 
@@ -278,12 +278,12 @@ rebuild: clean build
 name:                {{name}}
 version:             0.0.0.0
 synopsis:            {{synopsis}}
--- description:         {{description}}{{^description}}TODO: Description.{{/description}}
+description:         {{description}}{{^description}}TODO: Description.{{/description}}
 license:             Apache-2.0
 license-file:        LICENSE
 author:              {{author-name}}
 maintainer:          {{author-email}}
--- copyright:           {{copyright}}
+copyright:           {{copyright}}
 -- category:            
 build-type:          Simple
 -- extra-source-files:  

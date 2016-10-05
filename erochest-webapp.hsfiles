@@ -249,13 +249,13 @@ PORT=8080
 
 RUN=stack exec -- {{name}}
 
+run: build
+	$(RUN) --port $(PORT)
+
 init: stack.yaml
 
 stack.yaml:
-	stack init --prefer-nightly
-
-run: build
-	$(RUN) --port $(PORT)
+	stack init
 
 docs:
 	stack haddock
@@ -303,10 +303,10 @@ bench:
 	stack bench $(BUILD_FLAGS)
 
 watch:
-	ghcid "--command=stack ghci"
+	stack build --fast --file-watch --pedantic
 
 watch-test:
-	stack test --file-watch --pedantic # --test-arguments "-m TODO"
+	stack test --fast --file-watch --pedantic # --test-arguments "-m TODO"
 
 restart: distclean init build
 
@@ -331,12 +331,12 @@ library-profiling: True
 name:                {{name}}
 version:             0.0.0.0
 synopsis:            {{synopsis}}
--- description:         {{description}}{{^description}}TODO: Description.{{/description}}
+description:         {{description}}{{^description}}TODO: Description.{{/description}}
 license:             Apache-2.0
 license-file:        LICENSE
 author:              {{author-name}}
 maintainer:          {{author-email}}
--- copyright:           {{copyright}}
+copyright:           {{copyright}}
 -- category:
 build-type:          Simple
 -- extra-source-files:
@@ -348,15 +348,15 @@ library
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.8 && <4.10
-                     , digestive-functors
                      , errors
                      -- , google-oauth2
                      , lens
                      , lucid
                      , persistent
                      , persistent-postgresql
+                     , reroute
                      , Spock
-                     , Spock-digestive
+                     , Spock-core
                      -- , Spock-worker
                      , text
                      , text-format
@@ -432,16 +432,20 @@ source-repository head
 module Main where
 
 
-import           Web.Spock.Shared
+import           Web.Spock
+import           Web.Spock.Config
 
 import           Opts
 import           WebRoutes
+
+import           {{package}}.Types
 
 
 main :: IO ()
 main = do
     Serve{..} <- parseOpts
-    runSpock servePort webRoutes
+    spockCfg  <- defaultSpockCfg EmptySession PCNoDatabase NoState
+    runSpock servePort $ spock spockCfg webRoutes
 {-# START_FILE app/Opts.hs #-}
 {-# LANGUAGE LambdaCase #-}
 
@@ -505,16 +509,16 @@ data Actions
 module WebRoutes where
 
 
-import           Network.Wai
-import           Web.Spock.Safe
+import           Web.Spock
 
 -- import           Types
 
 import {{package}}.Actions.Default
+import {{package}}.Types
 
 
-webRoutes :: IO Middleware
-webRoutes = spockT id $
+webRoutes :: SpockM () {{package}}Session {{package}}State ()
+webRoutes = do
     get root $ defaultAction
 {-# START_FILE bench/Bench.hs #-}
 module Main where
@@ -556,12 +560,12 @@ spec = do
 module {{package}}.Actions.Default where
 
 
-import           Web.Spock.Safe
+import           Web.Spock
 
 -- import           {{package}}.Types
 
 
-defaultAction :: ActionCtxT ctx IO ()
+defaultAction :: ActionCtxT () (WebStateM () {{package}}Session {{package}}State) ()
 defaultAction = text "Good-bye, cruel world!"
 {-# START_FILE src/{{package}}/Types.hs #-}
 -- {-# LANGUAGE DeriveDataTypeable         #-}
@@ -583,3 +587,6 @@ module {{package}}.Types where
 -- import           Data.Data
 -- import qualified Data.Text              as T
 -- import           GHC.Generics           hiding (to)
+
+data {{package}}Session = EmptySession
+data {{package}}State   = NoState
