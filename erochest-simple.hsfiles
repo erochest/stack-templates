@@ -301,6 +301,7 @@ executable {{name}}
                      , text
                      , text-format
                      , optparse-applicative
+                     , optparse-text
   hs-source-dirs:      .
   ghc-options:         -threaded
                        -rtsopts

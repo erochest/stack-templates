@@ -313,6 +313,7 @@ executable {{name}}
                      , errors
                      , text
                      , optparse-applicative
+                     , optparse-text
                      , errors
   hs-source-dirs:      app
   ghc-options:         -O2
@@ -456,14 +457,12 @@ module Opts
 -- import qualified Data.List           as L
 -- import qualified Data.Text           as T
 import           Options.Applicative
+import           Options.Applicative.Text
 
 -- import           {{package}}.Types
 
 import           Types
 
-
--- textOption :: Mod OptionFields T.Text -> Parser T.Text
--- textOption = option (T.pack <$> str)
 
 outputOpt :: Parser FilePath
 outputOpt = strOption (  short 'o' <> long "output" <> metavar "OUTPUT_FILE"

@@ -379,6 +379,7 @@ executable {{name}}
                      , {{name}}
                      , errors
                      , optparse-applicative
+                     , optparse-text
                      , Spock
                      , text
                      , wai
@@ -461,6 +462,7 @@ module Opts
 import           Network.Wai.Handler.Warp
 
 import           Options.Applicative
+import           Options.Applicative.Text
 
 -- import           {{package}}.Types
 
