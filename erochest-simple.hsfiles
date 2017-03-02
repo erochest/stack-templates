@@ -280,8 +280,8 @@ rebuild: clean build
 {-# START_FILE {{name}}.cabal #-}
 name:                {{name}}
 version:             0.0.0.0
--- synopsis:
--- description:
+-- synopsis:		{{synopsis}}
+-- description:		{{description}}
 license:             Apache-2.0
 license-file:        LICENSE
 author:              {{author-name}}
