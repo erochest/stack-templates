@@ -5,8 +5,8 @@
 
 name:           {{ name }}
 version:        0.0.0
-synopsis:       A new Haskeleton package.
-description:    {{ name }} is a new Haskeleton package.
+-- synopsis:
+-- description:
 category:       Other
 homepage:       https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{ name }}#readme
 bug-reports:    https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{ name }}/issues
@@ -149,7 +149,7 @@ The change log is available through the [releases on GitHub][].
 {-# START_FILE LICENSE.md #-}
 [The MIT License (MIT)][]
 
-Copyright (c) {{year}}{{^year}}2016{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}
+Copyright (c) {{year}}{{^year}}2017{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

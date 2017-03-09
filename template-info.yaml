@@ -1,6 +1,9 @@
 chrisdone:
   description:
 
+foundation:
+  description: Project based on an alternative prelude with batteries and no dependencies.
+
 franklinchen:
   description:
 
@@ -29,7 +32,7 @@ quickcheck-test-framework:
   description: a library for random testing of program properties
 
 readme-lhs:
-  description:
+  description: small scale, quick start, literate haskell projects
 
 rubik:
   description:
@@ -42,9 +45,6 @@ scotty-hspec-wai:
 
 servant:
   description: a set of packages for declaring web APIs at the type-level
-
-servant-0.4:
-  description:
 
 servant-docker:
   description:
@@ -62,7 +62,7 @@ spock:
   description: a lightweight web framework
 
 tasty-discover:
-  description:
+  description: a project with tasty-discover with setup
 
 tasty-travis:
   description:
