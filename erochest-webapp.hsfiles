@@ -1,4 +1,8 @@
 {-# START_FILE .gitignore #-}
+
+# Created by https://www.gitignore.io/api/haskell
+
+### Haskell ###
 dist
 dist-*
 cabal-dev
@@ -17,6 +21,11 @@ cabal.sandbox.config
 *.hp
 *.eventlog
 .stack-work/
+cabal.project.local
+.HTF/
+
+# End of https://www.gitignore.io/api/haskell
+*.cabal
 {-# START_FILE .travis.yml #-}
 sudo: false
 
@@ -286,6 +295,9 @@ tags: $(SRC)
 hlint:
 	hlint *.hs src specs
 
+weeder:
+	weeder . --build
+
 clean:
 	stack clean
 	codex cache clean
@@ -304,6 +316,9 @@ bench:
 
 watch:
 	stack build --fast --file-watch --pedantic
+
+fast-watch:
+	ghcid "--command=stack ghci"
 
 watch-test:
 	stack test --fast --file-watch --pedantic # --test-arguments "-m TODO"
@@ -325,106 +340,86 @@ rebuild: clean build
 {-# START_FILE Setup.hs #-}
 import Distribution.Simple
 main = defaultMain
-{-# START_FILE cabal.config #-}
-library-profiling: True
-{-# START_FILE {{name}}.cabal #-}
-name:                {{name}}
-version:             0.0.0.0
-synopsis:            {{synopsis}}
-description:         {{description}}{{^description}}TODO: Description.{{/description}}
-license:             Apache-2.0
-license-file:        LICENSE
-author:              {{author-name}}
-maintainer:          {{author-email}}
-copyright:           {{copyright}}
--- category:
-build-type:          Simple
--- extra-source-files:
-cabal-version:       >=1.10
-
-library
-  exposed-modules:     {{package}}.Actions.Default
-                     , {{package}}.Types
-  -- other-modules:
-  -- other-extensions:
-  build-depends:       base >=4.8 && <4.10
-                     , errors
-                     -- , google-oauth2
-                     , lens
-                     , lucid
-                     , persistent
-                     , persistent-postgresql
-                     , reroute
-                     , Spock
-                     , Spock-core
-                     -- , Spock-worker
-                     , text
-                     , text-format
-                     -- , users
-                     -- , users-persistent
-                     -- , validate-input
-                     , wai
-                     , wai-middleware-static
-                     , warp
-  hs-source-dirs:      src
-  default-language:    Haskell2010
-
-executable {{name}}
-  main-is:             Main.hs
-  other-modules:       Opts
-                     , Types
-                     , WebRoutes
-  -- other-extensions:
-  build-depends:       base >=4.8 && <5
-                     , {{name}}
-                     , errors
-                     , optparse-applicative
-                     , optparse-text
-                     , Spock
-                     , text
-                     , wai
-                     , wai-middleware-static
-                     , warp
-  hs-source-dirs:      app
-  ghc-options:         -O2
-                       -threaded
-                       -rtsopts
-                       "-with-rtsopts=-N"
-                       -- -fprof-auto "-with-rtsopts=-N -p -s -h -i0.1"
-  default-language:    Haskell2010
-
-test-suite {{name}}-specs
-  type:                exitcode-stdio-1.0
-  ghc-options:         -threaded -rtsopts
-  hs-source-dirs:      specs
-  main-is:             Specs.hs
-  other-modules:         {{package}}.TypesSpec
-  build-depends:         base
-                       , {{name}}
-                       , errors
-                       , lens
-                       , text
-                       , QuickCheck
-                       , smallcheck
-                       , hspec
-  default-language:    Haskell2010
-
-benchmark {{name}}-bench
-  type:                exitcode-stdio-1.0
-  ghc-options:         -O2
-                       -threaded
-                       -rtsopts
-  hs-source-dirs:      bench
-  main-is:             Bench.hs
-  -- other-modules:
-  build-depends:         base
-                       , {{name}}
-                       , criterion
-  default-language:    Haskell2010
-
-source-repository head
-  type:     git
-  location: https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
+{-# START_FILE package.yaml #-}
+name: {{name}}
+version: '0.0.0.0'
+synopsis: {{synopsis}}
+description: {{description}}{{^description}}TODO: Description.{{/description}}
+author: {{author-name}}
+maintainer: {{author-email}}
+copyright: {{copyright}}
+license: Apache-2.0
+github: {{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
+library:
+  source-dirs: src
+  exposed-modules:
+  - {{package}}.Actions.Default
+  - {{package}}.Types
+  dependencies:
+  - base >=4.8 && <4.10
+  - errors
+  - lens
+  - lucid
+  - persistent
+  - persistent-postgresql
+  - reroute
+  - safe-exceptions
+  - Spock
+  - Spock-core
+  - text
+  - text-format
+  - wai
+  - wai-middleware-static
+  - warp
+executables:
+  webapp:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - base >=4.8 && <5
+    - webapp
+    - errors
+    - optparse-applicative
+    - optparse-text
+    - Spock
+    - text
+    - wai
+    - wai-middleware-static
+    - warp
+tests:
+  webapp-specs:
+    main: Specs.hs
+    source-dirs: specs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    dependencies:
+    - base
+    - {{name}}
+    - errors
+    - safe-exceptions
+    - lens
+    - text
+    - QuickCheck
+    - smallcheck
+    - hspec
+benchmarks:
+  webapp-bench:
+    main: Bench.hs
+    source-dirs: bench
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    dependencies:
+    - base
+    - {{name}}
+    - criterion
 {-# START_FILE app/Main.hs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
@@ -459,10 +454,11 @@ module Opts
     ) where
 
 
+import           Data.Monoid
 import           Network.Wai.Handler.Warp
 
 import           Options.Applicative
-import           Options.Applicative.Text
+-- import           Options.Applicative.Text
 
 -- import           {{package}}.Types
 
@@ -564,7 +560,7 @@ module {{package}}.Actions.Default where
 
 import           Web.Spock
 
--- import           {{package}}.Types
+import           {{package}}.Types
 
 
 defaultAction :: ActionCtxT () (WebStateM () {{package}}Session {{package}}State) ()

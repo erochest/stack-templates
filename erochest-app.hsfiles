@@ -1,5 +1,3 @@
-{-# START_FILE cabal.config #-}
-library-profiling: True
 {-# START_FILE LICENSE #-}
                                  Apache License
                            Version 2.0, January 2004
@@ -246,6 +244,9 @@ tags: $(SRC)
 hlint:
 	hlint *.hs src specs
 
+weeder:
+	weeder . --build
+
 clean:
 	stack clean
 	codex cache clean
@@ -265,6 +266,9 @@ bench:
 watch:
 	stack build --fast --file-watch --pedantic
 
+fast-watch:
+	ghcid "--command=stack ghci"
+
 watch-test:
 	stack test --fast --file-watch --pedantic # --test-arguments "-m TODO"
 
@@ -274,87 +278,74 @@ rebuild: clean build
 
 .PHONY: init run docs configure install hlint clean distclean build test
 .PHONY: bench watch watch-test restart rebuild
-{-# START_FILE {{name}}.cabal #-}
-name:                {{name}}
-version:             0.0.0.0
-synopsis:            {{synopsis}}
-description:         {{description}}{{^description}}TODO: Description.{{/description}}
-license:             Apache-2.0
-license-file:        LICENSE
-author:              {{author-name}}
-maintainer:          {{author-email}}
-copyright:           {{copyright}}
--- category:            
-build-type:          Simple
--- extra-source-files:  
-cabal-version:       >=1.10
-
-library
-  exposed-modules:     {{package}}.Actions.Default
-                     , {{package}}.Types
-  -- other-modules:       
-  -- other-extensions:    
-  build-depends:       base >=4.8 && <4.10
-                     , errors
-                     , lens
-                     , text
-                     , text-format
-  hs-source-dirs:      src
-  default-language:    Haskell2010
-
-executable {{name}}
-  main-is:             Main.hs
-  other-modules:       Actions
-                     , Opts
-                     , Types
-  -- other-extensions:    
-  build-depends:       base >=4.8 && <5
-                     , {{name}}
-                     , errors
-                     , text
-                     , optparse-applicative
-                     , optparse-text
-                     , errors
-  hs-source-dirs:      app
-  ghc-options:         -O2
-                       -threaded
-                       -rtsopts
-                       "-with-rtsopts=-N"
-                       -- -fprof-auto "-with-rtsopts=-N -p -s -h -i0.1"
-  default-language:    Haskell2010
-
-test-suite {{name}}-specs
-  type:                exitcode-stdio-1.0
-  ghc-options:         -threaded -rtsopts
-  hs-source-dirs:      specs
-  main-is:             Specs.hs
-  other-modules:         {{package}}.TypesSpec
-  build-depends:         base
-                       , {{name}}
-                       , errors
-                       , lens
-                       , text
-                       , QuickCheck
-                       , smallcheck
-                       , hspec
-  default-language:    Haskell2010
-
-benchmark {{name}}-bench
-  type:                exitcode-stdio-1.0
-  ghc-options:         -O2
-                       -threaded
-                       -rtsopts
-  hs-source-dirs:      bench
-  main-is:             Bench.hs
-  -- other-modules:         
-  build-depends:         base
-                       , {{name}}
-                       , criterion
-  default-language:    Haskell2010
-
-source-repository head
-  type:     git
-  location: https://github.com/{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
+{-# START_FILE package.yaml #-}
+name: {{name}}
+version: '0.0.0.0'
+synopsis: {{synopsis}}
+description: {{description}}{{^description}}TODO: Description.{{/description}}
+author: {{author-name}}
+maintainer: {{author-email}}
+copyright: {{copyright}}
+license: Apache-2.0
+github: {{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
+library:
+  source-dirs: src
+  exposed-modules:
+  - {{package}}.Actions.Default
+  - {{package}}.Types
+  dependencies:
+  - base >=4.8 && <4.10
+  - errors
+  - lens
+  - safe-exceptions
+  - text
+  - text-format
+executables:
+  app:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - base >=4.8 && <5
+    - {{name}}
+    - errors
+    - text
+    - optparse-applicative
+    - optparse-text
+    - safe-exceptions
+tests:
+  app-specs:
+    main: Specs.hs
+    source-dirs: specs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    dependencies:
+    - base
+    - {{name}}
+    - errors
+    - safe-exceptions
+    - lens
+    - text
+    - QuickCheck
+    - smallcheck
+    - hspec
+benchmarks:
+  app-bench:
+    main: Bench.hs
+    source-dirs: bench
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    dependencies:
+    - base
+    - {{name}}
+    - criterion
 {-# START_FILE README.md #-}
 # {{name}}
 
@@ -385,6 +376,10 @@ script:
   - stack --no-terminal --install-ghc test --pedantic 
 
 {-# START_FILE .gitignore #-}
+
+# Created by https://www.gitignore.io/api/haskell
+
+### Haskell ###
 dist
 dist-*
 cabal-dev
@@ -403,6 +398,11 @@ cabal.sandbox.config
 *.hp
 *.eventlog
 .stack-work/
+cabal.project.local
+.HTF/
+
+# End of https://www.gitignore.io/api/haskell
+*.cabal
 {-# START_FILE Setup.hs #-}
 import Distribution.Simple
 main = defaultMain
@@ -415,14 +415,12 @@ main = defaultMain
 module Actions where
 
 
-import           Control.Error
-
 import           {{package}}.Actions.Default
 
 import           Types
 
 
-action :: Actions -> Script ()
+action :: Actions -> IO ()
 
 action Default{..} = defaultAction defaultInput defaultOutput
 
@@ -433,14 +431,12 @@ action Default{..} = defaultAction defaultInput defaultOutput
 module Main where
 
 
-import           Control.Error
-
 import           Actions
 import           Opts
 
 
 main :: IO ()
-main = runScript . action =<< parseOpts
+main = action =<< parseOpts
 {-# START_FILE app/Opts.hs #-}
 {-# LANGUAGE LambdaCase #-}
 
@@ -455,9 +451,10 @@ module Opts
 
 -- import           Control.Monad       (mzero)
 -- import qualified Data.List           as L
+import           Data.Monoid
 -- import qualified Data.Text           as T
 import           Options.Applicative
-import           Options.Applicative.Text
+-- import           Options.Applicative.Text
 
 -- import           {{package}}.Types
 
@@ -545,15 +542,13 @@ spec = do
 module {{package}}.Actions.Default where
 
 
-import           Control.Error
-
 -- import           {{package}}.Types
 
 
-defaultAction :: FilePath -> FilePath -> Script ()
+defaultAction :: FilePath -> FilePath -> IO ()
 defaultAction _input _output = undefined
 {-# START_FILE src/{{package}}/Types.hs #-}
--- {-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 -- {-# LANGUAGE DeriveFunctor              #-}
 -- {-# LANGUAGE DeriveGeneric              #-}
 -- {-# LANGUAGE DeriveTraversable          #-}
@@ -569,6 +564,16 @@ module {{package}}.Types where
 
 
 -- import           Control.Lens
+import           Control.Exception.Safe
 -- import           Data.Data
 -- import qualified Data.Text              as T
 -- import           GHC.Generics           hiding (to)
+
+
+data {{package}}Exception = {{package}}Exception
+  deriving Typeable
+
+instance Show {{package}}Exception where
+  show {{package}}Exception = "something bad happened"
+
+instance Exception {{package}}Exception
